@@ -33,7 +33,7 @@ fn initialize_sets_admin_and_emits_event() {
 
     let events = env.events().all();
     assert!(events.len() > baseline);
-    assert!(events.iter().any(|(cid, _, _)| *cid == contract_id));
+    assert!(events.iter().any(|(cid, _, _)| cid == contract_id));
 }
 
 #[test]
@@ -74,7 +74,7 @@ fn add_to_allowlist_emits_event() {
 
     let events = env.events().all();
     assert!(events.len() > baseline);
-    assert!(events.iter().any(|(cid, _, _)| *cid == contract_id));
+    assert!(events.iter().any(|(cid, _, _)| cid == contract_id));
 }
 
 #[test]
@@ -115,7 +115,7 @@ fn remove_from_allowlist_emits_event() {
 
     let events = env.events().all();
     assert!(events.len() > baseline);
-    assert!(events.iter().any(|(cid, _, _)| *cid == contract_id));
+    assert!(events.iter().any(|(cid, _, _)| cid == contract_id));
 }
 
 #[test]

@@ -1,66 +1,24 @@
-import { describe, it, expect, vi, beforeEach } from "vitest"
 import { render, screen } from "@testing-library/react"
 import { MemoryRouter } from "react-router-dom"
+import { describe, it, expect, vi, beforeEach } from "vitest"
 import Dashboard from "./Dashboard"
-import { WalletContext } from "../providers/WalletProvider"
 
-vi.mock("react-i18next", () => ({
-	useTranslation: () => ({
-		i18n: { resolvedLanguage: "en" },
-	}),
-}))
-
-vi.mock("../hooks/useLearnerProfile", () => ({
-	useLearnerProfile: vi.fn(),
+// Mock only the hooks actually used by Dashboard
+vi.mock("../hooks/useWallet", () => ({
+	useWallet: vi.fn(),
 }))
 
 vi.mock("../hooks/useLearnToken", () => ({
 	useLearnToken: vi.fn(),
 }))
 
-vi.mock("../hooks/useCourse", () => ({
-	useCourse: vi.fn(),
-}))
-
-vi.mock("../components/ActivityFeed", () => ({
-	default: () => <div>Activity Feed</div>,
-}))
-
-vi.mock("../components/MyBookmarks", () => ({
-	default: () => <div>Bookmarks</div>,
-}))
-
-vi.mock("../components/LRNBalanceWidget", () => ({
-	default: () => <div>Balance Widget</div>,
-}))
-
-vi.mock("../components/AddressDisplay", () => ({
-	default: ({ address }: { address: string }) => <span>{address}</span>,
-}))
-
-vi.mock("../components/CourseCard", () => ({
-	default: ({ title }: { title: string }) => <div>{title}</div>,
-}))
-
-import { useLearnerProfile } from "../hooks/useLearnerProfile"
 import { useLearnToken } from "../hooks/useLearnToken"
-import { useCourse } from "../hooks/useCourse"
+import { useWallet } from "../hooks/useWallet"
 
-const renderDashboard = (address?: string) => {
+const renderDashboard = () => {
 	return render(
 		<MemoryRouter>
-			<WalletContext.Provider
-				value={{
-					address,
-					balances: {},
-					isPending: false,
-					isReconnecting: false,
-					signTransaction: vi.fn(),
-					updateBalances: vi.fn(),
-				}}
-			>
-				<Dashboard />
-			</WalletContext.Provider>
+			<Dashboard />
 		</MemoryRouter>,
 	)
 }
@@ -69,130 +27,95 @@ describe("Dashboard page", () => {
 	beforeEach(() => {
 		vi.clearAllMocks()
 
-		vi.mocked(useLearnerProfile).mockReturnValue({
-			profile: { address: "GTEST123" },
-			isLoading: false,
-			error: null,
-			address: "GTEST123",
-		} as any)
-
 		vi.mocked(useLearnToken).mockReturnValue({
-			balance: 5000000000n,
+			balance: 0n,
 			isLoading: false,
 			mint: vi.fn(),
 			isMinting: false,
 		} as any)
-
-		vi.mocked(useCourse).mockReturnValue({
-			enrolledCourses: [
-				{
-					id: "course-1",
-					title: "Blockchain Basics",
-				},
-				{
-					id: "course-2",
-					title: "Smart Contracts",
-				},
-			],
-
-			getCourseProgress: vi.fn().mockReturnValue({
-				courseId: "course-1",
-				completedMilestoneIds: [1, 2],
-				totalMilestones: 2,
-			}),
-
-			isCompletingMilestone: false,
-
-			enroll: vi.fn(),
-			completeMilestone: vi.fn(),
-			submitMilestone: vi.fn(),
-			submissionStatusMap: {},
-			getEscrowTimeout: vi.fn(),
-		} as any)
 	})
 
-	it("renders loading skeleton while data is fetching", () => {
-		vi.mocked(useLearnToken).mockReturnValue({
-			balance: undefined,
-			isLoading: true,
-			mint: vi.fn(),
-			isMinting: false,
-		} as any)
-
-		const { container } = renderDashboard("GTEST123")
-
-		expect(container.querySelector(".animate-pulse")).toBeInTheDocument()
-	})
-
-	it("shows LRN balance from useLearnToken hook", () => {
-		renderDashboard("GTEST123")
-
-		expect(screen.getByText(/LRN Balance/i)).toBeInTheDocument()
-		expect(screen.getByText("500")).toBeInTheDocument()
-	})
-
-	it("shows enrolled courses list", () => {
-		renderDashboard("GTEST123")
-
-		expect(screen.getByText("Blockchain Basics")).toBeInTheDocument()
-		expect(screen.getByText("Smart Contracts")).toBeInTheDocument()
-	})
-
-	it("shows reputation rank", () => {
-		renderDashboard("GTEST123")
-
-		expect(screen.getByText(/Reputation Rank/i)).toBeInTheDocument()
-		expect(screen.getByText(/Top Scholar/i)).toBeInTheDocument()
-	})
-
-	it("shows empty state when no courses are enrolled", () => {
-		vi.mocked(useCourse).mockReturnValue({
-			enrolledCourses: [],
-
-			getCourseProgress: vi.fn().mockReturnValue({
-				courseId: "course-1",
-				completedMilestoneIds: [],
-				totalMilestones: 0,
-			}),
-
-			isCompletingMilestone: false,
-
-			enroll: vi.fn(),
-			completeMilestone: vi.fn(),
-			submitMilestone: vi.fn(),
-			submissionStatusMap: {},
-			getEscrowTimeout: vi.fn(),
-		} as any)
-
-		renderDashboard("GTEST123")
-
-		expect(
-			screen.getByText(/You haven't enrolled in any courses yet/i),
-		).toBeInTheDocument()
-	})
-
-	it("handles API error state gracefully", () => {
-		vi.mocked(useLearnerProfile).mockReturnValue({
-			profile: undefined,
-			isLoading: false,
-			error: "API failed",
+	it("renders the Learner Dashboard heading", () => {
+		vi.mocked(useWallet).mockReturnValue({
 			address: "GTEST123",
 		} as any)
 
-		renderDashboard("GTEST123")
+		renderDashboard()
 
 		expect(
-			screen.getByText(/Unable to load profile data right now/i),
+			screen.getByRole("heading", { name: /Learner Dashboard/i }),
 		).toBeInTheDocument()
 	})
 
-	it("wallet not connected shows connect prompt", () => {
-		renderDashboard(undefined)
+	it("shows connect wallet prompt when wallet is not connected", () => {
+		vi.mocked(useWallet).mockReturnValue({
+			address: undefined,
+		} as any)
 
+		renderDashboard()
+
+		expect(screen.getByText(/Connect your wallet/i)).toBeInTheDocument()
 		expect(
-			screen.getByRole("heading", {
-				name: /Connect Your Wallet/i,
-			}),
+			screen.getByText(/Connect to see your wallet address and stats/i),
 		).toBeInTheDocument()
+	})
+
+	it("shows wallet address stat card when connected", () => {
+		vi.mocked(useWallet).mockReturnValue({
+			address: "GTEST123",
+		} as any)
+
+		renderDashboard()
+
+		expect(screen.getByText("Wallet Address")).toBeInTheDocument()
+		expect(screen.getByText("GTEST123")).toBeInTheDocument()
+	})
+
+	it("shows placeholder LearnToken balance of 0 LRN", () => {
+		vi.mocked(useWallet).mockReturnValue({
+			address: "GTEST123",
+		} as any)
+
+		renderDashboard()
+
+		expect(screen.getByText("LearnToken Balance")).toBeInTheDocument()
+		expect(screen.getByText("0 LRN")).toBeInTheDocument()
+	})
+
+	it("shows scholarship eligibility badge", () => {
+		vi.mocked(useWallet).mockReturnValue({
+			address: "GTEST123",
+		} as any)
+
+		renderDashboard()
+
+		expect(screen.getByText("Scholarship Eligibility")).toBeInTheDocument()
+		expect(screen.getByText("Not yet eligible")).toBeInTheDocument()
+	})
+
+	it("renders placeholder courses in progress", () => {
+		vi.mocked(useWallet).mockReturnValue({
+			address: "GTEST123",
+		} as any)
+
+		renderDashboard()
+
+		expect(screen.getByText("Courses in progress")).toBeInTheDocument()
+		expect(screen.getByText("Web3 Foundations")).toBeInTheDocument()
+		expect(screen.getByText("Smart Contract Engineering")).toBeInTheDocument()
+		expect(screen.getByText("DeFi Builder Sprint")).toBeInTheDocument()
+		expect(screen.getByText("Milestone Verification 101")).toBeInTheDocument()
+	})
+
+	it("renders Browse Courses CTA link", () => {
+		vi.mocked(useWallet).mockReturnValue({
+			address: "GTEST123",
+		} as any)
+
+		renderDashboard()
+
+		const browseLink = screen.getByLabelText("Browse courses")
+		expect(browseLink).toBeInTheDocument()
+		expect(browseLink).toHaveAttribute("href", "/courses")
 	})
 })

@@ -45,13 +45,14 @@ vi.mock("../contracts/scholarship_treasury", () => ({
 	default: mockContracts.scholarshipTreasury,
 }))
 
-
-
 // Mock @stellar/design-system to avoid CSS import issues
 vi.mock("@stellar/design-system", () => ({
-	Alert: () => null,
-	Button: () => null,
-	Heading: () => null,
+	Alert: ({ children }: any) => createElement("div", null, children),
+	Badge: ({ children }: any) => createElement("span", null, children),
+	Button: ({ children, ...props }: any) =>
+		createElement("button", props, children),
+	Card: ({ children }: any) => createElement("div", null, children),
+	Heading: ({ children }: any) => createElement("h2", null, children),
 	Icon: {
 		Circle: () => null,
 		Checkmark: () => null,
@@ -64,6 +65,8 @@ vi.mock("@stellar/design-system", () => ({
 	},
 	SearchInput: () => null,
 	Select: () => null,
+	Text: ({ children, as: Tag = "span", ...props }: any) =>
+		createElement(Tag, props, children),
 	TextArea: () => null,
 	TextInput: () => null,
 	Toggle: () => null,
@@ -98,7 +101,6 @@ const mockEnv = {
 		"CGOV1234567890ABCDEFGHIJKLMN9876543210ZYXWVUTSRQPO",
 	PUBLIC_SCHOLARSHIP_TREASURY_CONTRACT_ID:
 		"CSCHOL1234567890ABCDEFGHIJKLMN9876543210ZYXWVUTSRQPO",
-	
 }
 
 // Stub import.meta.env for modules that read contract addresses at load time
